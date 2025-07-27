@@ -14,6 +14,7 @@ public:
     // getters
     std::string getAddress() const { return connAddr; };
     int getPort() const { return connPort; }
+    std::string ToString() const;
 
     friend std::ostream& operator<<(std::ostream& out, const Connection& conn);
 private:

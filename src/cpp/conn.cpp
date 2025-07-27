@@ -4,8 +4,6 @@ Connection::Connection(std::string hex_addr) {
     std::pair<std::string,int> connInfo = fromHex(hex_addr);
     connAddr = connInfo.first;
     connPort = connInfo.second;
-
-    std::cout << *this << std::endl;
 };
 
 std::pair<std::vector<std::string>,std::string> Connection::getHexBytes(const std::string hexStr) {
@@ -70,6 +68,10 @@ std::pair<std::string,int> Connection::fromHex(const std::string hex_addr) {
 
     return std::make_pair(ipAddr, port);
 };
+
+std::string Connection::ToString() const {
+    return "Connection | " + getAddress() + ":" + std::to_string(getPort());
+}
 
 std::ostream& operator<<(std::ostream& out, const Connection& conn) {
     out << "Connection | " << conn.getAddress() << ":" << conn.getPort() << std::endl;
