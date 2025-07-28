@@ -32,14 +32,17 @@ Viewer::Viewer() {
         // update any reactive windows
         update();
 
-        // bool exitting = drawMenu(menuBox, {
-        //     "option A",
-        //     "option B",
-        //     "option C",
-        //     "option D",
-        //     "exit"
-        // });
-        // if (exitting) break;
+        int status = drawMenu(menuBox, {
+            "flag", // mark an address to assign color coding
+            "kill", // attempt to kill connection
+            "view", // attempt to view connection
+            "save", // export current connection list to file
+            "exit"  // exit program
+        });
+        if (status == -1) break;
+
+        // give CPU breathing room
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 
@@ -111,8 +114,8 @@ std::shared_ptr<WINDOW*> Viewer::drawBox(int height, int width, int y, int x) {
 }
 
 // Draw interactable menu inside a given parent window and list of choices
-bool Viewer::drawMenu(std::shared_ptr<WINDOW*>& parentWindow, std::vector<std::string> options) {
-    if (!parentWindow) return true;
+int Viewer::drawMenu(std::shared_ptr<WINDOW*>& parentWindow, std::vector<std::string> options) {
+    if (!parentWindow) return -1;
     
     int parentWidth, parentHeight;
     getmaxyx(*parentWindow, parentHeight, parentWidth);
@@ -120,51 +123,55 @@ bool Viewer::drawMenu(std::shared_ptr<WINDOW*>& parentWindow, std::vector<std::s
     
     bool submit = false;
     bool quitMenu = false;
-    size_t choice = 0;
-    size_t highlight = 0;
 
-    while (!quitMenu) {
-        while (!submit) {
-            for (size_t i = 0; i < options.size(); ++i) {
-                if (i == highlight) {
-                    wattron(*parentWindow, A_REVERSE);
-                }
+    // maintain state between function invokations
+    static size_t choice = 0;
+    static size_t highlight = 0;
 
-                mvwprintw(*parentWindow, i+1, 1, options[i].c_str());
-                wattroff(*parentWindow, A_REVERSE);
-            }
-
-            choice = wgetch(*parentWindow);
-
-            switch(choice) {
-                case KEY_UP:
-                    highlight--;
-                    if (highlight == -1) highlight = options.size()-1;
-                break;
-                case KEY_DOWN:
-                    highlight++;
-                    if (highlight == options.size()) highlight = 0;
-                break;
-                case 10: // ENTER KEY
-                    submit = true;
-                break;
-                
-                default:
-                break;
-            }
+    for (size_t i = 0; i < options.size(); ++i) {
+        if (i == highlight) {
+            wattron(*parentWindow, A_REVERSE);
         }
-        submit = false;
 
-        // exit option selected
-        if (highlight+1 == options.size()) {
-            quitMenu = true;
-
-            // stop update thread
-            isDestroyed = true;
-        }
+        mvwprintw(*parentWindow, i+1, 1, options[i].c_str());
+        wattroff(*parentWindow, A_REVERSE);
     }
 
-    return true;
+    submit = false;
+
+    // disables blocking mode on this particular window
+    nodelay(*parentWindow, TRUE);
+    choice = wgetch(*parentWindow);
+
+    switch(choice) {
+        case KEY_UP:
+            highlight--;
+            if (highlight == -1) highlight = options.size()-1;
+        break;
+        case KEY_DOWN:
+            highlight++;
+            if (highlight == options.size()) highlight = 0;
+        break;
+        case 10: // ENTER KEY
+            submit = true;
+        break;
+        
+        default:
+        break;
+    }
+
+    // exit option selected
+    if (submit) {
+        if (highlight+1 == options.size()) {
+            return -1;
+        }
+
+        // idle
+        return 0;
+    } else {
+        // idle
+        return 0;
+    }
 }
 
 // Write lines to parent window from top-down
