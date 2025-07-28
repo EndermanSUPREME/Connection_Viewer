@@ -36,11 +36,11 @@ Component* ReactiveWindow::addComponent(Component* comp) {
 }
 
 // Iterates over components and updates them
-void ReactiveWindow::update() {
+void ReactiveWindow::update(bool& running) {
     if (!window) return;
 
     // update connected components
     for (auto& comp : components) {
-        comp->update();
+        comp->update(running);
     }
 }

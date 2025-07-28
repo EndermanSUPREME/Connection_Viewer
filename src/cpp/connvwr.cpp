@@ -8,38 +8,34 @@ Viewer::Viewer() {
     curs_set(0);            // Hide the cursor
     refresh();              // refresh the screen
 
-    // updateThread = std::thread(&Viewer::Update, this);
-
     drawDefaultBox();
 
-    // std::shared_ptr<WINDOW*> connBox = DrawBox(termHeight - 4, termWidth/2, 2, 2);
-    // DrawLines(connBox, 1, 1, connectionStrings());
+    // create reactive windows (update displays, user-input fields, etc)
+    ReactiveWindow* connWindow = new ReactiveWindow(termHeight - 4, termWidth/2, 2, 2);
+    Component* dText = connWindow->addComponent(new Text(1, 1));
+    reactiveWindows.push_back(connWindow);
 
-    ReactiveWindow* connBox = new ReactiveWindow(termHeight - 4, termWidth/2, 2, 2);
-    Component* comp = connBox->addComponent(new Text(1, 1));
-    reactiveWindows.push_back(connBox);
-
-    std::shared_ptr<WINDOW*> menuBox = drawBox(termHeight - 4, termWidth/4, 2, termWidth - (termWidth/3));
+    ReactiveWindow* menuWindow = new ReactiveWindow(termHeight - 4, termWidth/4, 2, termWidth - (termWidth/3));
+    Component* dMenu = menuWindow->addComponent(new Menu({
+        new PsuedoEvent("flag"), // mark an address to assign color coding
+        new PsuedoEvent("kill"), // attempt to kill connection
+        new PsuedoEvent("view"), // attempt to view connection
+        new PsuedoEvent("save"), // export current connection list to file
+        new ExitEvent("exit")  // exit program
+    }));
+    reactiveWindows.push_back(menuWindow);
 
     // render loop everything outside of this while loop only gets rendered once
-    while (true) {
+    bool running = true;
+    while (running) {
         // dynamically updates tracked Text Component
         getConnections();
-        if (Text* textComp = dynamic_cast<Text*>(comp)) {
+        if (Text* textComp = dynamic_cast<Text*>(dText)) {
             textComp->setLines(connectionStrings()); // Only in Text
         }
 
         // update any reactive windows
-        update();
-
-        int status = drawMenu(menuBox, {
-            "flag", // mark an address to assign color coding
-            "kill", // attempt to kill connection
-            "view", // attempt to view connection
-            "save", // export current connection list to file
-            "exit"  // exit program
-        });
-        if (status == -1) break;
+        update(running);
 
         // give CPU breathing room
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -47,10 +43,10 @@ Viewer::Viewer() {
 }
 
 // Thread Target for Updating Window Display 
-void Viewer::update() {
+void Viewer::update(bool& running) {
     // update the reactive window and its components
     for (auto& window : reactiveWindows) {
-        window->update();
+        window->update(running);
     }
 }
 
@@ -114,7 +110,7 @@ std::shared_ptr<WINDOW*> Viewer::drawBox(int height, int width, int y, int x) {
 }
 
 // Draw interactable menu inside a given parent window and list of choices
-int Viewer::drawMenu(std::shared_ptr<WINDOW*>& parentWindow, std::vector<std::string> options) {
+int Viewer::drawMenu(std::shared_ptr<WINDOW*>& parentWindow, std::vector<MenuEvent*> options) {
     if (!parentWindow) return -1;
     
     int parentWidth, parentHeight;
@@ -122,7 +118,6 @@ int Viewer::drawMenu(std::shared_ptr<WINDOW*>& parentWindow, std::vector<std::st
     keypad(*parentWindow, TRUE);   // Enable function & arrow keys
     
     bool submit = false;
-    bool quitMenu = false;
 
     // maintain state between function invokations
     static size_t choice = 0;
@@ -133,11 +128,9 @@ int Viewer::drawMenu(std::shared_ptr<WINDOW*>& parentWindow, std::vector<std::st
             wattron(*parentWindow, A_REVERSE);
         }
 
-        mvwprintw(*parentWindow, i+1, 1, options[i].c_str());
+        mvwprintw(*parentWindow, i+1, 1, options[i]->ToCString());
         wattroff(*parentWindow, A_REVERSE);
     }
-
-    submit = false;
 
     // disables blocking mode on this particular window
     nodelay(*parentWindow, TRUE);
@@ -162,16 +155,20 @@ int Viewer::drawMenu(std::shared_ptr<WINDOW*>& parentWindow, std::vector<std::st
 
     // exit option selected
     if (submit) {
+        // exit options
         if (highlight+1 == options.size()) {
             return -1;
         }
 
-        // idle
-        return 0;
-    } else {
+        // execute event
+        options[highlight]->execute();
+
         // idle
         return 0;
     }
+
+    // idle
+    return 0;
 }
 
 // Write lines to parent window from top-down

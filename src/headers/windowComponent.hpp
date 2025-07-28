@@ -6,12 +6,14 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <cassert>
+#include "menuEvent.hpp"
 
 // component base class
 class Component {
 public:
     // pure virtual
-    virtual void update() =0;
+    virtual void update(bool& running) =0;
     // virtual dtor
     virtual ~Component(){ /* Reactive Window dtor Deallocates Window */ window = nullptr; };
 
@@ -32,11 +34,23 @@ public:
     // setters
     void setLines(std::vector<std::string> lines_) { lines = lines_; };
 
-    void update() override;
+    void update(bool& running) override;
 private:
     int row;
     int col;
     std::vector<std::string> lines;
+};
+
+class Menu : public Component {
+public:
+    Menu(std::vector<MenuEvent*> events_ = {});
+    ~Menu();
+
+    void update(bool& running) override;
+private:
+    bool closeMenu;
+    std::vector<MenuEvent*> events;
+    ExitEvent* exitEvent;
 };
 
 #endif

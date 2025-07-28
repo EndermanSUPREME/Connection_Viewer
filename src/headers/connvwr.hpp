@@ -12,6 +12,7 @@
 #include "conn.hpp"
 #include "utils.hpp"
 #include "reactiveWindow.hpp"
+#include "menuEvent.hpp"
 
 class Viewer {
 public:
@@ -23,12 +24,12 @@ private:
     std::vector<std::string> readTcp6Connections();
     std::vector<std::string> connectionStrings();
 
-    void update();
+    void update(bool& running);
 
     void drawDefaultBox();
     std::shared_ptr<WINDOW*> drawBox(int height, int width, int y=0, int x=0);
 
-    int drawMenu(std::shared_ptr<WINDOW*>& parentWindow, const std::vector<std::string> options);
+    int drawMenu(std::shared_ptr<WINDOW*>& parentWindow, const std::vector<MenuEvent*> options);
     void drawLines(std::shared_ptr<WINDOW*>& parentWindow, int startRow, int column, const std::vector<std::string> lines);
     
     int termWidth;
@@ -38,7 +39,6 @@ private:
     // list of windows that will undergo updates at runtime
     // on a separate thread
     std::vector<ReactiveWindow*> reactiveWindows;
-    // std::thread updateThread;
 };
 
 #endif
