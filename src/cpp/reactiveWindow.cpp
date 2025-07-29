@@ -4,13 +4,6 @@
 ReactiveWindow::ReactiveWindow(int height, int width, int y, int x) {
     if (!window) {
         window = std::make_shared<WINDOW*>(newwin(height, width, y, x));
-
-        // Draw border and add label
-        box(*window, 0, 0);
-
-        // Refresh window to draw new content
-        wrefresh(*window);
-        refresh();
     }
 }
 
@@ -36,11 +29,18 @@ Component* ReactiveWindow::addComponent(Component* comp) {
 }
 
 // Iterates over components and updates them
-void ReactiveWindow::update(bool& running) {
+void ReactiveWindow::update(actionMode& mode) {
     if (!window) return;
+
+    // Draw Box border
+    box(*window, 0, 0);
+
+    // Refresh window to draw new content
+    wrefresh(*window);
+    refresh();
 
     // update connected components
     for (auto& comp : components) {
-        comp->update(running);
+        comp->update(mode);
     }
 }

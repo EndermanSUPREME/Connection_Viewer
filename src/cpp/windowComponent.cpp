@@ -1,6 +1,6 @@
 #include <windowComponent.hpp>
 
-void Text::update(bool& running) {
+void Text::update(actionMode& mode) {
     if (!window) return;
 
     int currentLine = row;
@@ -38,7 +38,7 @@ Menu::~Menu() {
     }
 }
 
-void Menu::update(bool& running) {
+void Menu::update(actionMode& mode) {
     if (!window) return;
     
     int parentWidth, parentHeight;
@@ -92,7 +92,7 @@ void Menu::update(bool& running) {
 
         // check if exit event was triggered
         if (exitEvent != nullptr && exitEvent->getExitState()) {
-            running = false;
+            mode = actionMode::EXIT;
             return;
         }
     }

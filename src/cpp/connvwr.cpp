@@ -17,25 +17,28 @@ Viewer::Viewer() {
 
     ReactiveWindow* menuWindow = new ReactiveWindow(termHeight - 4, termWidth/4, 2, termWidth - (termWidth/3));
     Component* dMenu = menuWindow->addComponent(new Menu({
-        new PsuedoEvent("flag"), // mark an address to assign color coding
-        new PsuedoEvent("kill"), // attempt to kill connection
-        new PsuedoEvent("view"), // attempt to view connection
-        new PsuedoEvent("save"), // export current connection list to file
+        new FlagEvent("flag"), // mark an address to assign color coding
+        new KillEvent("kill"), // attempt to kill connection
+        new ViewEvent("view"), // attempt to view connection
+        new SaveEvent("save"), // export current connection list to file
         new ExitEvent("exit")  // exit program
     }));
     reactiveWindows.push_back(menuWindow);
 
     // render loop everything outside of this while loop only gets rendered once
-    bool running = true;
-    while (running) {
+    actionMode mode = actionMode::DEFAULT;
+    while (mode != actionMode::EXIT) {
         // dynamically updates tracked Text Component
         getConnections();
         if (Text* textComp = dynamic_cast<Text*>(dText)) {
+            // record the connections for potential exporting
+            ConnectionRecorder::getInstance().setContent(connectionStrings());
+            // update text component content
             textComp->setLines(connectionStrings()); // Only in Text
         }
 
         // update any reactive windows
-        update(running);
+        update(mode);
 
         // give CPU breathing room
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -43,10 +46,10 @@ Viewer::Viewer() {
 }
 
 // Thread Target for Updating Window Display 
-void Viewer::update(bool& running) {
+void Viewer::update(actionMode& mode) {
     // update the reactive window and its components
     for (auto& window : reactiveWindows) {
-        window->update(running);
+        window->update(mode);
     }
 }
 
@@ -87,100 +90,6 @@ void Viewer::drawDefaultBox() {
     title += ")";
     mvprintw(1, 2, title.c_str());
     refresh();
-}
-
-// Draw a box on screen with given height, width, row, column
-std::shared_ptr<WINDOW*> Viewer::drawBox(int height, int width, int y, int x) {
-    // Create window with custom dimensions
-    WINDOW* win = newwin(height, width, y, x);
-    
-    // track windows created
-    windows.push_back(std::make_shared<WINDOW*>(win));
-
-    // Draw border and add label
-    box(win, 0, 0);
-
-    // Refresh to draw
-    wrefresh(win);
-
-    // refresh the screen
-    refresh();
-
-    return windows.back();
-}
-
-// Draw interactable menu inside a given parent window and list of choices
-int Viewer::drawMenu(std::shared_ptr<WINDOW*>& parentWindow, std::vector<MenuEvent*> options) {
-    if (!parentWindow) return -1;
-    
-    int parentWidth, parentHeight;
-    getmaxyx(*parentWindow, parentHeight, parentWidth);
-    keypad(*parentWindow, TRUE);   // Enable function & arrow keys
-    
-    bool submit = false;
-
-    // maintain state between function invokations
-    static size_t choice = 0;
-    static size_t highlight = 0;
-
-    for (size_t i = 0; i < options.size(); ++i) {
-        if (i == highlight) {
-            wattron(*parentWindow, A_REVERSE);
-        }
-
-        mvwprintw(*parentWindow, i+1, 1, options[i]->ToCString());
-        wattroff(*parentWindow, A_REVERSE);
-    }
-
-    // disables blocking mode on this particular window
-    nodelay(*parentWindow, TRUE);
-    choice = wgetch(*parentWindow);
-
-    switch(choice) {
-        case KEY_UP:
-            highlight--;
-            if (highlight == -1) highlight = options.size()-1;
-        break;
-        case KEY_DOWN:
-            highlight++;
-            if (highlight == options.size()) highlight = 0;
-        break;
-        case 10: // ENTER KEY
-            submit = true;
-        break;
-        
-        default:
-        break;
-    }
-
-    // exit option selected
-    if (submit) {
-        // exit options
-        if (highlight+1 == options.size()) {
-            return -1;
-        }
-
-        // execute event
-        options[highlight]->execute();
-
-        // idle
-        return 0;
-    }
-
-    // idle
-    return 0;
-}
-
-// Write lines to parent window from top-down
-void Viewer::drawLines(std::shared_ptr<WINDOW*>& parentWindow, int startRow, int column, std::vector<std::string> lines) {
-    if (!parentWindow) return;
-    int currentLine = startRow;
-
-    for (const std::string& line : lines) {
-        mvwprintw(*parentWindow, currentLine++, column, line.c_str());
-        // Refresh to draw
-        wrefresh(*parentWindow);
-    }
 }
 
 std::vector<std::string> Viewer::readTcpConnections() {

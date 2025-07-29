@@ -1,9 +1,12 @@
 #ifndef MENU_EVENT
 #define MENU_EVENT
 
+#include <ncurses.h>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <thread>
+#include "utils.hpp"
 
 // base class
 class MenuEvent {
@@ -43,6 +46,42 @@ public:
     bool getExitState() { return exitState; };
 private:
     bool exitState;
+};
+
+class SaveEvent : public MenuEvent {
+public:
+    // delegate to base ctor to fill in protected inherited member
+    SaveEvent(std::string str=""): MenuEvent(str) {};
+    SaveEvent(const SaveEvent& rhs) { description = rhs.description; };
+
+    void execute() override;
+};
+
+class ViewEvent : public MenuEvent {
+public:
+    // delegate to base ctor to fill in protected inherited member
+    ViewEvent(std::string str=""): MenuEvent(str) {};
+    ViewEvent(const ViewEvent& rhs) { description = rhs.description; };
+
+    void execute() override;
+};
+
+class KillEvent : public MenuEvent {
+public:
+    // delegate to base ctor to fill in protected inherited member
+    KillEvent(std::string str=""): MenuEvent(str) {};
+    KillEvent(const KillEvent& rhs) { description = rhs.description; };
+
+    void execute() override;
+};
+
+class FlagEvent : public MenuEvent {
+public:
+    // delegate to base ctor to fill in protected inherited member
+    FlagEvent(std::string str=""): MenuEvent(str) {};
+    FlagEvent(const FlagEvent& rhs) { description = rhs.description; };
+
+    void execute() override;
 };
 
 #endif

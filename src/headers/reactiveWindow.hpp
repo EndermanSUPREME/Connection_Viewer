@@ -17,7 +17,7 @@ public:
     // getter
     auto getComponents() const { return &components; };
 
-    void update(bool& running);
+    void update(actionMode& mode);
     Component* addComponent(Component* comp);
 private:
     std::shared_ptr<WINDOW*> window;

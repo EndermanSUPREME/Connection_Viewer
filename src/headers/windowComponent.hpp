@@ -13,7 +13,7 @@
 class Component {
 public:
     // pure virtual
-    virtual void update(bool& running) =0;
+    virtual void update(actionMode& mode) =0;
     // virtual dtor
     virtual ~Component(){ /* Reactive Window dtor Deallocates Window */ window = nullptr; };
 
@@ -34,7 +34,7 @@ public:
     // setters
     void setLines(std::vector<std::string> lines_) { lines = lines_; };
 
-    void update(bool& running) override;
+    void update(actionMode& mode) override;
 private:
     int row;
     int col;
@@ -46,7 +46,7 @@ public:
     Menu(std::vector<MenuEvent*> events_ = {});
     ~Menu();
 
-    void update(bool& running) override;
+    void update(actionMode& mode) override;
 private:
     bool closeMenu;
     std::vector<MenuEvent*> events;
