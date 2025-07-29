@@ -12,7 +12,7 @@ void ExitEvent::execute() {
 }
 
 void SaveEvent::execute() {
-    std::string savePath = drawTextInput(3, 75, 4, 10, "/tmp/connections.txt");
+    std::string savePath = drawTextInput("Save To: %s", 3, 75, 4, 10, "/tmp/connections.txt");
     try {
         std::ofstream outputFile(savePath);
         if (outputFile) {
@@ -41,4 +41,22 @@ void KillEvent::execute() {
 }
 
 void FlagEvent::execute() {
+    std::string lineIndex = drawTextInput("Enter Line: %s", 5, 75, 4, 10, "0");
+    int line = -1;
+
+    // ensure the line is a valid index
+    while (!isInteger(lineIndex, line) ||
+            line < 0 || line >= ConnectionRecorder::getInstance().getContent()->size()) {
+        lineIndex = drawTextInput("Enter Line: %s", 5, 75, 4, 10, "0");
+    }
+
+    if (isFlagRemover()) {
+        ConnectionFlagger::getInstance().removeEntry(
+            ConnectionRecorder::getInstance().getContent()->at(line)
+        );
+    } else {
+        ConnectionFlagger::getInstance().flagEntry(
+            ConnectionRecorder::getInstance().getContent()->at(line)
+        );
+    }
 }

@@ -1,5 +1,16 @@
 #include <utils.hpp>
 
+bool isInteger(const std::string& input, int& number) {
+    try {
+        size_t pos;
+        number = std::stoi(input, &pos);
+        return pos == input.length();
+    } catch (std::invalid_argument&) {
+        // Not a number at all
+        return false;
+    }
+}
+
 std::vector<std::string> splitLine(const std::string line, char delimiter) {
     std::vector<std::string> results;
     std::string fragment;
@@ -71,7 +82,7 @@ void drawPopUp(int height, int y, int x, int duration, std::string content) {
     deleteWindow(window);
 }
 
-std::string drawTextInput(int height, int width, int y, int x, std::string defaultValue) {
+std::string drawTextInput(const char* prompt, int height, int width, int y, int x, std::string defaultValue) {
     std::string inputValue = defaultValue;
     int cursorPosition = inputValue.size();
     std::shared_ptr<WINDOW*> window = drawBox(height,width,y,x);
@@ -81,8 +92,8 @@ std::string drawTextInput(int height, int width, int y, int x, std::string defau
     while (true) {
         werase(*window);
         box(*window, 0, 0);
-        mvwprintw(*window, 1, 1, "Save To: %s", inputValue.c_str());
-        wmove(*window, 1, cursorPosition + 10); // move cursor to the end of the recently printed string
+        mvwprintw(*window, 1, 1, prompt, inputValue.c_str());
+        wmove(*window, 1, cursorPosition + std::strlen(prompt) - 1); // move cursor to the end of the recently printed string
         wrefresh(*window);
 
         int c = wgetch(*window); // needed to accurately read arrow keys
@@ -197,4 +208,22 @@ void drawLines(std::shared_ptr<WINDOW*>& parentWindow, int startRow, int column,
 ConnectionRecorder& ConnectionRecorder::getInstance() {
     static ConnectionRecorder instance;
     return instance;
+}
+
+ConnectionFlagger& ConnectionFlagger::getInstance() {
+    static ConnectionFlagger instance;
+    return instance;
+}
+
+// add entry to flag list if entry doesnt exist
+void ConnectionFlagger::flagEntry(std::string entry) {
+    auto entryExists = std::find(entries.begin(), entries.end(), entry);
+    if (entryExists == entries.end()) {
+        entries.push_back(entry); // entry : 127.0.0.1:1234
+    }
+}
+// attempt to remove entry if it exists
+void ConnectionFlagger::removeEntry(std::string entry) {
+    // remove erase vector idiom
+    entries.erase(std::remove(entries.begin(), entries.end(), entry), entries.end());
 }

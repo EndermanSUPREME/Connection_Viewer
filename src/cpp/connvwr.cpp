@@ -5,8 +5,13 @@ Viewer::Viewer() {
     initscr();              // Start curses mode
     cbreak();               // Disable line buffering
     noecho();               // Don't echo user input
+    start_color();          // Allow color pairs
+    use_default_colors();   // Give access to default colors
     curs_set(0);            // Hide the cursor
     refresh();              // refresh the screen
+
+    // set color pair(s) that can be used later
+    init_pair(1, COLOR_RED, -1);
 
     drawDefaultBox();
 
@@ -18,6 +23,7 @@ Viewer::Viewer() {
     ReactiveWindow* menuWindow = new ReactiveWindow(termHeight - 4, termWidth/4, 2, termWidth - (termWidth/3));
     Component* dMenu = menuWindow->addComponent(new Menu({
         new FlagEvent("flag"), // mark an address to assign color coding
+        new FlagEvent("unflag", true), // remove a flagged address
         new KillEvent("kill"), // attempt to kill connection
         new ViewEvent("view"), // attempt to view connection
         new SaveEvent("save"), // export current connection list to file

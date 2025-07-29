@@ -8,9 +8,32 @@ void Text::update(actionMode& mode) {
     int width = getmaxx(*window);
 
     // write content
-    for (const std::string& line : lines) {
+    for (size_t i = 0; i < lines.size(); ++i) {
+        std::string line = lines[i];
+
+        // clears the current line
         mvwprintw(*window, currentLine, col, std::string(width - col - 1, ' ').c_str());
+
+        std::vector<std::string>& flaggedConns = *(ConnectionFlagger::getInstance().getFlaggedEntries());
+        bool isFlagged = std::find(flaggedConns.begin(), flaggedConns.end(), line) != flaggedConns.end();
+
+        // modify final line
+        line = std::to_string(i) + ". " + "Connection | " + line;
+
+        // have flagged connections be displayed in color
+        if (isFlagged) {
+            wattron(*window, COLOR_PAIR(1));
+        } else {
+            // if line was colored reset the colors
+            wattroff(*window, A_ATTRIBUTES);
+        }
+
+        // writes line
         mvwprintw(*window, currentLine++, col, line.c_str());
+
+        if (isFlagged) {
+            wattroff(*window, COLOR_PAIR(1));
+        }
     }
 
     // refresh window after writing all content

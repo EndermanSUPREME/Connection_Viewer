@@ -78,10 +78,13 @@ public:
 class FlagEvent : public MenuEvent {
 public:
     // delegate to base ctor to fill in protected inherited member
-    FlagEvent(std::string str=""): MenuEvent(str) {};
+    FlagEvent(std::string str="", bool unflag=false): MenuEvent(str), unflagMode(unflag) {};
     FlagEvent(const FlagEvent& rhs) { description = rhs.description; };
 
     void execute() override;
+    bool isFlagRemover() const { return unflagMode; };
+private:
+    bool unflagMode;
 };
 
 #endif

@@ -70,7 +70,7 @@ std::pair<std::string,int> Connection::fromHex(const std::string hex_addr) {
 };
 
 std::string Connection::ToString() const {
-    return "Connection | " + getAddress() + ":" + std::to_string(getPort());
+    return getAddress() + ":" + std::to_string(getPort());
 }
 
 std::ostream& operator<<(std::ostream& out, const Connection& conn) {
