@@ -7,6 +7,13 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <sys/types.h>
+#include <csignal>
+#include <dirent.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <cassert>
 #include <utility>
 #include <memory>
 #include <thread>
@@ -16,7 +23,7 @@ enum class actionMode { DEFAULT, FLAG, KILL, VIEW, EXIT };
 
 // check if the given string can convert to a proper integer
 // and saves the conversion result into a reference
-bool isInteger(const std::string& input, int& number);
+bool isInteger(const std::string& input, int* number = nullptr);
 
 std::vector<std::string> splitLine(const std::string line, char delimiter = ' ');
 std::string get_line(std::ifstream& file);
@@ -28,6 +35,11 @@ void drawLines(std::shared_ptr<WINDOW*>& parentWindow, int startRow, int column,
 std::string drawTextInput(const char* prompt, int height, int width, int y=0, int x=0, std::string defaultValue="");
 
 void deleteWindow(std::shared_ptr<WINDOW *>& window);
+
+std::vector<std::string> getPIDs();
+bool matchingInode(const std::string& fdPath, const unsigned int& inode);
+bool killProc(const int& pid);
+pid_t int2pid(const unsigned int& pid);
 
 // Singleton responsible for recording lines that potentially redirect to output files
 class ConnectionRecorder {
@@ -59,5 +71,7 @@ private:
 
     std::vector<std::string> entries;
 };
+
+
 
 #endif

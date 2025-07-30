@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(connViewer)
 
+# enable ctest
+enable_testing()
+
 # Find ncurses
 find_package(Curses REQUIRED)
 
@@ -16,3 +19,4 @@ include_directories(src/headers)
 
 # Add the source directory with its own CMakeLists.txt
 add_subdirectory(src)
+add_subdirectory(test)

@@ -1,14 +1,90 @@
 #include <utils.hpp>
 
-bool isInteger(const std::string& input, int& number) {
+bool isInteger(const std::string& input, int* number) {
     try {
         size_t pos;
-        number = std::stoi(input, &pos);
+
+        if (number != nullptr) {
+            // strip optional wrapper and access the reference
+            *number = std::stoi(input, &pos);
+        } else {
+            std::stoi(input, &pos);
+        }
+
         return pos == input.length();
     } catch (std::invalid_argument&) {
         // Not a number at all
         return false;
     }
+}
+
+// convert unsigned integer into pid_t
+pid_t int2pid(const unsigned int& pid) {
+    return static_cast<pid_t>(pid);
+}
+
+// Collect list of current PID directories
+std::vector<std::string> getPIDs() {
+    const char* proc_path = "/proc";
+    std::vector<std::string> pidPaths;
+
+    DIR* dir = opendir(proc_path);
+    if (!dir) {
+        return {"Error reading pids from /proc"};
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        std::string name = entry->d_name;
+        if (isInteger(name)) {
+            std::string pidPath;
+
+            // increment create final pid path str
+            pidPath += proc_path;
+            pidPath += "/";
+            pidPath += name;
+
+            pidPaths.push_back(pidPath);
+        }
+    }
+
+    closedir(dir);
+    return pidPaths;
+}
+
+// Check if a given fd_path contains a socket based on given inode value
+bool matchingInode(const std::string& fdPath, const unsigned int& inode) {
+    DIR* dir = opendir(fdPath.c_str());
+    if (!dir) {
+        return false;
+    }
+
+    bool inodeFound = false;
+    struct dirent* entry;
+    while (!inodeFound && (entry = readdir(dir)) != nullptr) {
+        std::string name = entry->d_name;
+
+        char target[PATH_MAX];
+        ssize_t len = readlink(name.c_str(), target, sizeof(target) - 1);
+
+        if (len == -1) {
+            perror("readlink");
+            return 1;
+        }
+
+        target[len] = '\0';
+
+        if (strncmp(target, "socket:[", 8) == 0) {
+        }
+    }
+
+    closedir(dir);
+    return inodeFound;
+}
+
+// attempt to kill process based on pid
+bool killProc(const int& pid) {
+    return (kill(int2pid(pid), SIGTERM) == 0);
 }
 
 std::vector<std::string> splitLine(const std::string line, char delimiter) {
