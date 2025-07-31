@@ -27,17 +27,65 @@ void SaveEvent::execute() {
             getmaxyx(stdscr, height, width);
             drawPopUp(3, height/2,10, 2,saveMsg);
         } else {
-
+            std::string saveMsg = "Error saving to: " + savePath;
+            
+            int height, width;
+            getmaxyx(stdscr, height, width);
+            drawPopUp(3, height/2,10, 2,saveMsg);
         }
     } catch (std::exception error) {
         // error catch pop-up
+        int height, width;
+        getmaxyx(stdscr, height, width);
+        drawPopUp(3, height/2,10, 2,"I/O Exception Error!");
     }
 }
 
-void ViewEvent::execute() {
-}
-
 void KillEvent::execute() {
+    // gather current pids
+    std::vector<std::string> pidPaths = getPIDs();
+    if (pidPaths.empty()) {
+        int height, width;
+        getmaxyx(stdscr, height, width);
+        std::string msg = pidPaths.front();
+        drawPopUp(3, height/2,10, 2,"Error reading pids from /proc");
+        return;
+    }
+
+    std::string connIndexStr = drawTextInput("Enter line: %s", 3, 75, 4, 10, "0");
+    int index = -1;
+
+    // ensure the line is a valid index
+    while (!isInteger(connIndexStr, &index) ||
+            index < 0 || index >= ConnectionRecorder::getInstance().getConnections()->size()) {
+        connIndexStr = drawTextInput("Enter Line: %s", 5, 75, 4, 10, "0");
+    }
+
+    std::vector<Connection>& conns = *(ConnectionRecorder::getInstance().getConnections());
+    std::string inodeStr = conns[index].getInode();
+
+    int height, width;
+    getmaxyx(stdscr, height, width);
+
+    // iterate each pidPath and find a matching socket
+    // Reading -> /proc/12/fd/*
+    bool killedProc = false;
+    for (const std::string& pidPath : pidPaths) {
+        // Pull pid from path: /proc/12 resolves to 12
+        int pid = std::stoi(pidPath.substr(pidPath.find_last_of('/')+1));
+    
+        if (matchingInode(pidPath + "/fd", inodeStr)) {
+            // attempt killing PID
+            killedProc = killProc(pid);
+            return;
+        }
+    }
+
+    // if a kill failed, this is becasue the user running the binary
+    // doesnt have sufficient permission to read the PIDs FD path contents
+    if (!killedProc) {
+        drawPopUp(3, height/2,10, 2,"Kill PID Failed, potentially requires SUDO!");
+    }
 }
 
 void FlagEvent::execute() {
@@ -45,7 +93,7 @@ void FlagEvent::execute() {
     int line = -1;
 
     // ensure the line is a valid index
-    while (!isInteger(lineIndex, line) ||
+    while (!isInteger(lineIndex, &line) ||
             line < 0 || line >= ConnectionRecorder::getInstance().getContent()->size()) {
         lineIndex = drawTextInput("Enter Line: %s", 5, 75, 4, 10, "0");
     }

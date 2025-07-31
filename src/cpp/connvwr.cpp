@@ -24,8 +24,9 @@ Viewer::Viewer() {
     Component* dMenu = menuWindow->addComponent(new Menu({
         new FlagEvent("flag"), // mark an address to assign color coding
         new FlagEvent("unflag", true), // remove a flagged address
+        
         new KillEvent("kill"), // attempt to kill connection
-        new ViewEvent("view"), // attempt to view connection
+
         new SaveEvent("save"), // export current connection list to file
         new ExitEvent("exit")  // exit program
     }));
@@ -35,10 +36,14 @@ Viewer::Viewer() {
     actionMode mode = actionMode::DEFAULT;
     while (mode != actionMode::EXIT) {
         // dynamically updates tracked Text Component
-        getConnections();
+        collectConnections();
         if (Text* textComp = dynamic_cast<Text*>(dText)) {
             // record the connections for potential exporting
             ConnectionRecorder::getInstance().setContent(connectionStrings());
+
+            // keep record of Connection objects for potential later use
+            ConnectionRecorder::getInstance().setConnections(*getConnections());
+
             // update text component content
             textComp->setLines(connectionStrings()); // Only in Text
         }
@@ -144,7 +149,7 @@ std::vector<std::string> Viewer::connectionStrings() {
     return connList;
 }
 
-void Viewer::getConnections() {
+void Viewer::collectConnections() {
     std::vector<std::string> tcpEntries = readTcpConnections();
     std::vector<std::string> tcp6Entries = readTcp6Connections();
     conns.clear();
@@ -157,10 +162,15 @@ void Viewer::getConnections() {
         if (entryFragments.size() > 2) {
             // rem_address | hex_address:hex_port
             std::string rem_address = entryFragments[2];
+            std::string inodeStr = entryFragments[9];
             
             // no value entry
             if (rem_address == "00000000:0000") continue;
-            conns.emplace_back(rem_address);
+            conns.emplace_back(rem_address, inodeStr);
         }
     }
+}
+
+std::vector<Connection>* Viewer::getConnections() {
+    return &conns;
 }

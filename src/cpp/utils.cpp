@@ -23,6 +23,16 @@ pid_t int2pid(const unsigned int& pid) {
     return static_cast<pid_t>(pid);
 }
 
+// Check if a given path can be viewed
+bool canReadDir(const std::string path) {
+    DIR* dir = opendir(path.c_str());
+    if (!dir) {
+        return false;
+    }
+    closedir(dir);
+    return true;
+}
+
 // Collect list of current PID directories
 std::vector<std::string> getPIDs() {
     const char* proc_path = "/proc";
@@ -30,7 +40,7 @@ std::vector<std::string> getPIDs() {
 
     DIR* dir = opendir(proc_path);
     if (!dir) {
-        return {"Error reading pids from /proc"};
+        return pidPaths;
     }
 
     struct dirent* entry;
@@ -52,8 +62,8 @@ std::vector<std::string> getPIDs() {
     return pidPaths;
 }
 
-// Check if a given fd_path contains a socket based on given inode value
-bool matchingInode(const std::string& fdPath, const unsigned int& inode) {
+// Check if a PID path contains a fd path matching linkTarget
+bool matchingInode(const std::string fdPath, const std::string linkTarget) {
     DIR* dir = opendir(fdPath.c_str());
     if (!dir) {
         return false;
@@ -64,17 +74,37 @@ bool matchingInode(const std::string& fdPath, const unsigned int& inode) {
     while (!inodeFound && (entry = readdir(dir)) != nullptr) {
         std::string name = entry->d_name;
 
-        char target[PATH_MAX];
-        ssize_t len = readlink(name.c_str(), target, sizeof(target) - 1);
+        if (isInteger(name)) {
+            std::string finalPath = fdPath;
+            finalPath += "/";
+            finalPath += name;
+            
+            // std::cerr << "[*] name -> " << finalPath << std::endl;
 
-        if (len == -1) {
-            perror("readlink");
-            return 1;
-        }
+            char target[PATH_MAX];
+            ssize_t len = readlink(finalPath.c_str(), target, sizeof(target) - 1);
+            if (len == -1) {
+                // std::cerr << "[*] " << __FUNCTION__ << " | no readlink data!" << std::endl;
+                continue;
+            }
 
-        target[len] = '\0';
+            target[len] = '\0';
+            // std::cerr << "[*] " << __FUNCTION__ << " | TARGET::" << target << std::endl;
 
-        if (strncmp(target, "socket:[", 8) == 0) {
+            // check if target is pointing to a socket via partial string matching
+            if (isInteger(linkTarget) && strncmp(target, "socket:[", 8) == 0) {
+                // len is null-terminating, len-1 is closing square bracket
+                size_t start = std::string(target).find('[');
+                size_t end = std::string(target).find(']');
+                std::string inodeStr = std::string(target).substr(start + 1, end - start - 1);
+
+                if (linkTarget == inodeStr) {
+                    inodeFound = true;
+                }
+            } else {
+                // check if target matches inode string
+                inodeFound = (target == linkTarget);
+            }
         }
     }
 

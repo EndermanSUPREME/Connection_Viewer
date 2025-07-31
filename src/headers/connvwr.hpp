@@ -18,8 +18,9 @@ class Viewer {
 public:
     Viewer();
     ~Viewer();
+    std::vector<Connection>* getConnections();
 private:
-    void getConnections();
+    void collectConnections();
     std::vector<std::string> readTcpConnections();
     std::vector<std::string> readTcp6Connections();
     std::vector<std::string> connectionStrings();

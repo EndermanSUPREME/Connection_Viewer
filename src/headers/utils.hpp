@@ -13,11 +13,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <cassert>
 #include <utility>
 #include <memory>
 #include <thread>
 #include <algorithm>
+
+#include "conn.hpp"
 
 enum class actionMode { DEFAULT, FLAG, KILL, VIEW, EXIT };
 
@@ -37,23 +38,29 @@ std::string drawTextInput(const char* prompt, int height, int width, int y=0, in
 void deleteWindow(std::shared_ptr<WINDOW *>& window);
 
 std::vector<std::string> getPIDs();
-bool matchingInode(const std::string& fdPath, const unsigned int& inode);
+bool matchingInode(const std::string fdPath, const std::string inodeStr);
 bool killProc(const int& pid);
 pid_t int2pid(const unsigned int& pid);
+bool canReadDir(const std::string path);
 
 // Singleton responsible for recording lines that potentially redirect to output files
 class ConnectionRecorder {
 public:
     // thread safe singleton
     static ConnectionRecorder& getInstance();
+
     void setContent(std::vector<std::string> content_={}) { content = content_; };
     std::vector<std::string>* getContent() { return &content; };
+    
+    void setConnections(std::vector<Connection> conns_={}) { conns = conns_; };
+    std::vector<Connection>* getConnections() { return &conns; };
 private:
     ConnectionRecorder(){};
     ConnectionRecorder(const ConnectionRecorder&) = delete;
     ConnectionRecorder& operator=(const ConnectionRecorder&) = delete;
 
     std::vector<std::string> content;
+    std::vector<Connection> conns;
 };
 
 class ConnectionFlagger {

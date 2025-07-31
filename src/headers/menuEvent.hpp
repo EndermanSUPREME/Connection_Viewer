@@ -57,15 +57,6 @@ public:
     void execute() override;
 };
 
-class ViewEvent : public MenuEvent {
-public:
-    // delegate to base ctor to fill in protected inherited member
-    ViewEvent(std::string str=""): MenuEvent(str) {};
-    ViewEvent(const ViewEvent& rhs) { description = rhs.description; };
-
-    void execute() override;
-};
-
 class KillEvent : public MenuEvent {
 public:
     // delegate to base ctor to fill in protected inherited member
